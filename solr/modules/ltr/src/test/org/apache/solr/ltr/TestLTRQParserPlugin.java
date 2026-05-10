@@ -231,4 +231,72 @@ public class TestLTRQParserPlugin extends TestRerankBase {
         // original score for the 4th document due to reRankDocs=3 limit
         "/response/docs/[3]/score==1.0");
   }
+
+  @Test
+  public void ltrEchoReRankCutoff_shouldAddHeaderField() throws Exception {
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.setFields("id", "score");
+    query.setRows(2);
+    query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3 echoReRankCutoff=true}");
+
+    assertJQ("/query" + query.toQueryString(), "/responseHeader/reRankCutoff==3.0");
+  }
+
+  @Test
+  public void ltrEchoReRankCutoff_defaultShouldNotAddHeaderField() throws Exception {
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.setFields("id", "score");
+    query.setRows(2);
+    query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3}");
+
+    final String res = restTestHarness.query("/query" + query.toQueryString());
+    assertFalse(res.contains("\"reRankCutoff\""));
+  }
+
+  @Test
+  public void ltrEchoReRankCutoff_falseShouldNotAddHeaderField() throws Exception {
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.setFields("id", "score");
+    query.setRows(2);
+    query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3 echoReRankCutoff=false}");
+
+    final String res = restTestHarness.query("/query" + query.toQueryString());
+    assertFalse(res.contains("\"reRankCutoff\""));
+  }
+
+  @Test
+  public void ltrEchoReRankCutoff_withFieldSortShouldAddSortCutoffValue() throws Exception {
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.setFields("id", "score");
+    query.setRows(2);
+    query.setSort("id", SolrQuery.ORDER.asc);
+    query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3 echoReRankCutoff=true}");
+
+    assertJQ("/query" + query.toQueryString(), "/responseHeader/reRankCutoff=='8'");
+  }
+
+  @Test
+  public void ltrEchoReRankCutoff_withMixedScoreAndFieldSort_shouldAddBothValuesInOrder()
+      throws Exception {
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.setFields("id", "score");
+    query.setRows(2);
+    query.add("sort", "score desc,id asc");
+    query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3 echoReRankCutoff=true}");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/responseHeader/reRankCutoff/[0]==3.0",
+        "/responseHeader/reRankCutoff/[1]=='7'");
+  }
 }
