@@ -4,9 +4,6 @@ name: Nightly Docker Build & Publish
 #  handled by Jenkins, but ASF's Jenkins is not equipped to build a multi-platform Docker image.
 
 on:
-  schedule:
-    # Run daily at 2 AM UTC
-    - cron: '0 2 * * *'
   workflow_dispatch:
     # Allow manual triggering
 
